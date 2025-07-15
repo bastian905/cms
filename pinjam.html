@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Form Peminjaman</title>
+  <style>
+    body { font-family: 'Segoe UI'; padding: 20px; background: #f9f9f9; }
+    form { background: #fff; padding: 20px; max-width: 500px; margin: auto; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
+    input, select { width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #ccc; }
+    button { padding: 10px 20px; background: #00467f; color: white; border: none; border-radius: 6px; cursor: pointer; }
+    .resi { background: #e6f7ff; padding: 10px; border-radius: 8px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+
+  <form id="pinjamForm">
+    <h2>Form Peminjaman Buku</h2>
+    <p id="judulBuku">Memuat judul...</p>
+
+    <input type="text" id="nama" placeholder="Nama Lengkap" required />
+    <input type="text" id="nim" placeholder="NIM" required />
+    <input type="text" id="prodi" placeholder="Program Studi" required />
+    <input type="text" id="kelas" placeholder="Kelas" required />
+    <input type="date" id="tanggal_pinjam" required />
+    <input type="date" id="tanggal_pengembalian" required />
+
+    <button type="submit">Pinjam Sekarang</button>
+    <button type="button" onclick="window.location.href='index.html'" style="margin-top: 10px;">Kembali</button>
+  </form>
+
+  <div id="hasil" class="resi" style="display: none;"></div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const supabase = createClient(
+      'https://whhnuismtwqbmplvwzwf.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoaG51aXNtdHdxYm1wbHZ3endmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAxMzc1ODQsImV4cCI6MjA2NTcxMzU4NH0.9aAnrF1Vicqui3zWSXcAck_prcganeCIJEtN-RKyDVc'
+    )
+
+    const idBuku = localStorage.getItem('id_buku_dipinjam')
+    const judulBuku = document.getElementById('judulBuku')
+    const hasil = document.getElementById('hasil')
+
+    async function getBuku() {
+      const { data } = await supabase.from('buku').select('*').eq('id', idBuku).single()
+      judulBuku.textContent = `Judul Buku: ${data.judul}`
+    }
+
+    document.getElementById('pinjamForm').addEventListener('submit', async e => {
+      e.preventDefault()
+
+      const nama = document.getElementById('nama').value.trim()
+      const nim = document.getElementById('nim').value.trim()
+      const prodi = document.getElementById('prodi').value.trim()
+      const kelas = document.getElementById('kelas').value.trim()
+      const tanggal = document.getElementById('tanggal_pinjam').value
+      const tanggalPengembalian = document.getElementById('tanggal_pengembalian').value
+
+      const noResi = 'RESI-' + Math.floor(Math.random() * 1000000)
+
+      const { error } = await supabase.from('peminjaman').insert([{
+        id_buku: idBuku,
+        nama,
+        nim,
+        prodi,
+        kelas,
+        tanggal_pinjam: tanggal,
+        tanggal_pengembalian: tanggalPengembalian,
+        status: 'Menunggu',
+        no_resi: noResi
+      }])
+
+      if (error) {
+        alert('Gagal menyimpan: ' + error.message)
+        return
+      }
+
+      hasil.style.display = 'block'
+      hasil.innerHTML = `
+        <strong>Peminjaman berhasil!</strong><br/>
+        Nama: ${nama}<br/>
+        NIM: ${nim}<br/>
+        Resi: <strong>${noResi}</strong><br/>
+        Tanggal Pengembalian: ${tanggalPengembalian}<br/>
+        Tunjukkan resi ini ke petugas perpustakaan.
+      `
+    })
+
+    getBuku()
+  </script>
+
+</body>
+</html>
