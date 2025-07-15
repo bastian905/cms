@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login Supabase - CRUD</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .login-box {
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .login-box h2 {
+      text-align: center;
+      color: #00467f;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 15px;
+      font-weight: 500;
+      font-size: 14px;
+      color: #333;
+    }
+
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #00467f;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      margin-top: 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #003054;
+    }
+
+    p {
+      margin-top: 15px;
+      text-align: center;
+      font-size: 14px;
+      color: #555;
+    }
+
+    a {
+      color: #00467f;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .top-nav {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+    }
+
+    .top-nav button {
+      padding: 8px 16px;
+      background-color: #00467f;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .top-nav button:hover {
+      background-color: #003054;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Tombol Kembali -->
+  <div class="top-nav">
+    <button onclick="window.location.href='index.html'">← Home</button>
+  </div>
+
+  <!-- Kotak Login -->
+  <div class="login-box" id="loginBox">
+    <h2>Login</h2>
+    <form id="loginForm">
+      <label>Email:
+        <input type="email" id="email" required />
+      </label>
+      <label>Password:
+        <input type="password" id="password" required />
+      </label>
+      <button type="submit">Login</button>
+    </form>
+    <p>Belum punya akun? <a href="#" id="registerLink">Daftar di sini</a></p>
+  </div>
+
+  <!-- Kotak Setelah Login -->
+  <div class="login-box" id="welcomeBox" style="display: none;">
+    <h2 id="welcome">Halo, User!</h2>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <!-- Supabase Script -->
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    const supabase = createClient(
+      'https://whhnuismtwqbmplvwzwf.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoaG51aXNtdHdxYm1wbHZ3endmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAxMzc1ODQsImV4cCI6MjA2NTcxMzU4NH0.9aAnrF1Vicqui3zWSXcAck_prcganeCIJEtN-RKyDVc'
+    );
+
+    // Cek sesi
+    async function checkLogin() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const user = session.user;
+        document.getElementById('loginBox').style.display = 'none';
+        document.getElementById('welcomeBox').style.display = 'block';
+        document.getElementById('welcome').innerText = `Halo, ${user.email}`;
+        window.location.href = 'admin.html';
+      }
+    }
+
+    // Login
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        alert('Gagal login: ' + error.message);
+      } else {
+        checkLogin();
+      }
+    });
+
+    // Register
+    document.getElementById('registerLink').addEventListener('click', async (e) => {
+      e.preventDefault();
+      const email = prompt('Masukkan email baru:');
+      const password = prompt('Masukkan password:');
+
+      const { data, error } = await supabase.auth.signUp({ email, password });
+
+      if (error) {
+        alert('Gagal daftar: ' + error.message);
+      } else {
+        alert('Akun berhasil dibuat. Silakan login.');
+      }
+    });
+
+    async function logout() {
+      await supabase.auth.signOut();
+      location.reload();
+    }
+
+    checkLogin();
+  </script>
+
+</body>
+</html>
