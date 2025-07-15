@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Perpustakaan</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h2 {
+      color: #00467f;
+      margin-top: 30px;
+    }
+
+    button {
+      background-color: #00467f;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #003054;
+    }
+
+    #logoutBtn {
+      float: right;
+      background-color: crimson;
+    }
+
+    #addBtn {
+      margin-right: 10px;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      background-color: #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 10px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      background-color: #00467f;
+      color: white;
+    }
+
+    tr:hover {
+      background-color: #f1f1f1;
+      cursor: pointer;
+    }
+
+    #crudForm {
+      display: none;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin-top: 20px;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    #crudForm input[type="text"],
+    #crudForm input[type="date"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    #crudForm button {
+      margin-top: 10px;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>CRUD Buku Perpustakaan</h2>
+  <button id="logoutBtn">Logout</button>
+  <button id="addBtn">Tambah Buku</button>
+  <button onclick="window.location.href='index.html'">Home</button>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Judul</th>
+        <th>Pengarang</th>
+        <th>Penerbit</th>
+        <th>Tanggal Terbit</th>
+        <th>Genre</th>
+      </tr>
+    </thead>
+    <tbody id="dataBody"></tbody>
+  </table>
+
+  <form id="crudForm">
+    <input type="hidden" id="recordId" />
+    <label>Judul:</label>
+    <input type="text" id="judulInput" required />
+
+    <label>Pengarang:</label>
+    <input type="text" id="pengarangInput" required />
+
+    <label>Penerbit:</label>
+    <input type="text" id="penerbitInput" required />
+
+    <label>Tanggal Terbit:</label>
+    <input type="date" id="tanggalInput" required />
+
+    <label>Genre:</label>
+    <input type="text" id="genreInput" required />
+
+    <button type="submit">Simpan</button>
+    <button type="button" id="deleteBtn">Hapus</button>
+    <button type="button" id="cancelBtn">Batal</button>
+  </form>
+
+  <h2>Daftar Peminjaman</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Resi</th>
+        <th>Nama</th>
+        <th>Buku</th>
+        <th>Tanggal Pinjam</th>
+        <th>Tanggal kembali</th>
+        <th>Status</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody id="peminjamanBody"></tbody>
+  </table>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const supabase = createClient(
+      'https://whhnuismtwqbmplvwzwf.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoaG51aXNtdHdxYm1wbHZ3endmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAxMzc1ODQsImV4cCI6MjA2NTcxMzU4NH0.9aAnrF1Vicqui3zWSXcAck_prcganeCIJEtN-RKyDVc'
+    )
+
+    const dataBody = document.getElementById('dataBody')
+    const peminjamanBody = document.getElementById('peminjamanBody')
+
+    const addBtn = document.getElementById('addBtn')
+    const crudForm = document.getElementById('crudForm')
+    const recordIdInput = document.getElementById('recordId')
+    const judulInput = document.getElementById('judulInput')
+    const pengarangInput = document.getElementById('pengarangInput')
+    const penerbitInput = document.getElementById('penerbitInput')
+    const tanggalInput = document.getElementById('tanggalInput')
+    const genreInput = document.getElementById('genreInput')
+    const deleteBtn = document.getElementById('deleteBtn')
+    const cancelBtn = document.getElementById('cancelBtn')
+
+    async function loadData() {
+      const { data, error } = await supabase.from('buku').select('*').order('id')
+      if (error) return alert('Error loading data: ' + error.message)
+
+      dataBody.innerHTML = ''
+      data.forEach(row => {
+        const tr = document.createElement('tr')
+        tr.dataset.id = row.id
+        tr.innerHTML = `
+          <td>${row.id}</td>
+          <td>${row.judul}</td>
+          <td>${row.pengarang}</td>
+          <td>${row.penerbit}</td>
+          <td>${row.tanggal_terbit}</td>
+          <td>${row.genre}</td>
+        `
+        tr.addEventListener('click', () => showForm(row))
+        dataBody.appendChild(tr)
+      })
+    }
+
+    function showForm(data = null) {
+      if (data) {
+        recordIdInput.value = data.id
+        judulInput.value = data.judul
+        pengarangInput.value = data.pengarang
+        penerbitInput.value = data.penerbit
+        tanggalInput.value = data.tanggal_terbit
+        genreInput.value = data.genre
+        deleteBtn.style.display = 'inline-block'
+      } else {
+        recordIdInput.value = ''
+        crudForm.reset()
+        deleteBtn.style.display = 'none'
+      }
+      crudForm.style.display = 'block'
+    }
+
+    function hideForm() {
+      crudForm.style.display = 'none'
+      crudForm.reset()
+    }
+
+    async function saveData(e) {
+      e.preventDefault()
+      const id = recordIdInput.value
+      const data = {
+        judul: judulInput.value.trim(),
+        pengarang: pengarangInput.value.trim(),
+        penerbit: penerbitInput.value.trim(),
+        tanggal_terbit: tanggalInput.value,
+        genre: genreInput.value.trim()
+      }
+
+      let error
+      if (id) {
+        ({ error } = await supabase.from('buku').update(data).eq('id', id))
+      } else {
+        ({ error } = await supabase.from('buku').insert([data]))
+      }
+
+      if (error) return alert('Error: ' + error.message)
+      hideForm()
+      loadData()
+    }
+
+    async function deleteData() {
+      const id = recordIdInput.value
+      if (!id || !confirm('Yakin ingin menghapus buku ini?')) return
+      const { error } = await supabase.from('buku').delete().eq('id', id)
+      if (error) return alert('Gagal hapus: ' + error.message)
+      hideForm()
+      loadData()
+    }
+
+    async function loadPeminjaman() {
+      const { data, error } = await supabase.from('peminjaman')
+        .select('*, buku(judul)')
+        .order('id', { ascending: false })
+
+      if (error) return alert('Gagal muat data peminjaman: ' + error.message)
+
+      peminjamanBody.innerHTML = ''
+      data.forEach(p => {
+        peminjamanBody.innerHTML += `
+          <tr>
+            <td>${p.no_resi}</td>
+            <td>${p.nama}</td>
+            <td>${p.buku?.judul || '-'}</td>
+            <td>${p.tanggal_pinjam}</td>
+            <td>${p.tanggal_pengembalian || '-'}</td>
+            <td>${p.status}</td>
+            <td>
+              <button onclick="ubahStatus(${p.id}, 'Dipinjam')">Konfirmasi</button>
+              <button onclick="ubahStatus(${p.id}, 'Dikembalikan')">Kembali</button>
+              <button onclick="hapusPeminjaman(${p.id})" style="background-color:crimson;margin-top:5px;">Hapus</button>
+            </td>
+          </tr>
+        `
+      })
+    }
+
+    window.ubahStatus = async (id, status) => {
+      const { data, error } = await supabase
+        .from('peminjaman')
+        .select('id, id_buku')
+        .eq('id', id)
+        .single()
+
+      if (error) return alert('Gagal ambil data peminjaman: ' + error.message)
+      
+  // Update status peminjaman
+      const updatePinjam = await supabase.from('peminjaman').update({
+        status,
+        tanggal_pengembalian: status === 'Dikembalikan' ? new Date().toISOString().split('T')[0] : null
+      }).eq('id', id)
+      if (updatePinjam.error) return alert('Gagal ubah status peminjaman: ' + updatePinjam.error.message)
+
+  // Update status buku
+      const updateBuku = await supabase
+        .from('buku')
+        .update({ status: status === 'Dikembalikan' ? 'tersedia' : 'dipinjam' })
+        .eq('id', data.id_buku)
+
+      if (updateBuku.error) return alert('Gagal ubah status buku: ' + updateBuku.error.message)
+
+      loadPeminjaman()
+    }
+    window.hapusPeminjaman = async (id) => {
+      if (!confirm('Yakin ingin menghapus data peminjaman ini?')) return
+
+      const { error } = await supabase.from('peminjaman').delete().eq('id', id)
+      if (error) {
+        alert('Gagal menghapus data peminjam: ' + error.message)
+        return
+      }
+
+      loadPeminjaman()
+    }
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut()
+      localStorage.removeItem('sessionUser')
+      window.location.href = 'login.html'
+    })
+
+    addBtn.addEventListener('click', () => showForm(null))
+    crudForm.addEventListener('submit', saveData)
+    deleteBtn.addEventListener('click', deleteData)
+    cancelBtn.addEventListener('click', hideForm)
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadData()
+      loadPeminjaman()
+    })
+  </script>
+</body>
+</html>
